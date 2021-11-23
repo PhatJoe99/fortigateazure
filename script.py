@@ -130,3 +130,6 @@ def main():
         command_list.append('end')
         send_config = net_connect.send_config_set(command_list)
         command_list = []
+
+if __name__ == "__main__":                                      #Wykonanie skryptu
+    main()
