@@ -34,7 +34,7 @@ def downloadJson():                                                         #skr
 downloadJson()
 
 
-def checkMask(x):
+def checkMask(x):                                   #Przypisanie maski
     y = x[-2:]
     match y:
         case '15':
@@ -81,7 +81,7 @@ def ipAddToSubnet(AzureContainer, ipAddress):
     return (' "' + AzureContainer + '.' + ipAddress + '"')
 
 
-def ipPushToFortigate(AzurePart, ipAddress):
+def ipPushToFortigate(AzurePart, ipAddress):                                    #Stworzenie nowego wpisu w firewallu i dopisanie go do listy komend
     command_list = []
     command_list.append('edit "' + AzurePart + '.' + str(ipAddress) + '"')
     ipAddressWithoutMask = ipAddress[:-3]
@@ -111,15 +111,15 @@ def main():
     'device_type':'fortinet'
     }
     net_connect = Netmiko(**fortek)                             #Nawiązanie połączenia z fortkiem
-    for itemAzure in Azure:
+    for itemAzure in Azure:                                     #Wylistowanie wszystkich adresów z danego regionu Azure
         ipAddresses = jsonImport(itemAzure, jsonFileName)
-        command_list = []
+        command_list = []                                       #Pusta lista komend do puszczenia na fortka
         command_list.append('config firewall address')
         for item in ipAddresses:
             command_list.extend(ipPushToFortigate(item))
         command_list.append('end')
-        send_config = net_connect.send_config_set(command_list)
-        command_list = []
+        send_config = net_connect.send_config_set(command_list) #Puszczenie listy komend na fortka
+        command_list = []                                       #Wyczyszczenie listy komend
         command_list.append('config firewall addrgrp')
         command_list.append('edit "' + itemAzure + '"')
         members = ""
