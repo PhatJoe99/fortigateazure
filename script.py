@@ -145,7 +145,8 @@ def main():
             command_list = []                                       #Pusta lista komend do puszczenia na fortka
             command_list.append('config firewall address')
             for item in ipAddresses:
-                command_list.extend(ipPushToFortigate(itemAzure, item))
+                if item[:4] != '2603':
+                    command_list.extend(ipPushToFortigate(itemAzure, item))
             command_list.append('end')
             print(command_list)
             send_config = net_connect.send_config_set(command_list) #Puszczenie listy komend na fortka
@@ -155,7 +156,8 @@ def main():
             command_list.append('edit "' + itemAzure + '"')
             members = ""
             for item in ipAddresses:
-                members += ipAddToSubnet(itemAzure, item)
+                if item[:4] != '2603':
+                    members += ipAddToSubnet(itemAzure, item)
             command_list.append('set member' + members)
             command_list.append('next')
             command_list.append('end')
