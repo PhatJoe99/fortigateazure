@@ -140,3 +140,4 @@ cython_debug/
 settings.py
 Scripts/
 share/
+.gitignore
