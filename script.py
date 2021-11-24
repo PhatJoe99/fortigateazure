@@ -39,10 +39,7 @@ def deleteOldJson():                        #usuwanie starego JSONa
             oldJson = item
             os.remove(item)
             print('File removed ' + item)
-    return(item)
-
-
-deleteOldJson()
+            return(item)
 
 
 def downloadJson():                                                         #skrypt do pobierania JSONa
@@ -53,9 +50,6 @@ def downloadJson():                                                         #skr
     filename = wget.download(url)
     print('JSON downloaded: ' + filename)
     return(filename)
-
-
-downloadJson()
 
 
 def checkMask(x):                                   #Przypisanie maski
@@ -111,8 +105,10 @@ def ipAddToSubnet(AzureContainer, ipAddress):
 def ipPushToFortigate(AzurePart, ipAddress):                                    #Stworzenie nowego wpisu w firewallu i dopisanie go do listy komend
     command_list = []
     command_list.append('edit "' + AzurePart + '.' + str(ipAddress) + '"')
+    mask = str(checkMask(ipAddress))
     ipAddressWithoutMask = ipAddress[:-3]
-    command_list.append('set subnet ' + str(ipAddressWithoutMask) + ' ' + str(checkMask(ipAddress)))
+    command_list.append('set subnet ' + str(ipAddressWithoutMask) + ' ' + mask)
+    command_list.append('set allow-routing enable')
     command_list.append('next')
     return command_list
 
@@ -130,7 +126,9 @@ def jsonImport(AzurePart, jsonFileName):
 
 def main():
     oldJson = deleteOldJson()                                   #Usunięcie starego JSONa
+    print(oldJson)
     jsonFileName = downloadJson()                               #Pobranie nowego JSONa
+    print(jsonFileName)
     if oldJson != jsonFileName:
         print("Przystępuję od aktualizacji konfiguracji na fortigate")
         fortek = {                                                  #Dane logowania do fortka
@@ -145,25 +143,26 @@ def main():
             command_list = []                                       #Pusta lista komend do puszczenia na fortka
             command_list.append('config firewall address')
             for item in ipAddresses:
-                if item[:4] != '2603':
+                if item[:4] != '2603' and item[:4] != '2a01':
                     command_list.extend(ipPushToFortigate(itemAzure, item))
             command_list.append('end')
             print(command_list)
             send_config = net_connect.send_config_set(command_list) #Puszczenie listy komend na fortka
             print(send_config)
             command_list = []                                       #Wyczyszczenie listy komend
-            command_list.append('config firewall addrgrp')
-            command_list.append('edit "' + itemAzure + '"')
-            members = ""
             for item in ipAddresses:
-                if item[:4] != '2603':
+                if item[:4] != '2603' and item[:4] != '2a01':
+                    members = ""
+                    command_list.append('config firewall addrgrp')
+                    command_list.append('edit "' + itemAzure + '"')
                     members += ipAddToSubnet(itemAzure, item)
-            command_list.append('set member' + members)
-            command_list.append('next')
-            command_list.append('end')
-            send_config = net_connect.send_config_set(command_list)
-            print(send_config)
-            command_list = []
+                    command_list.append('append member' + members)
+                    command_list.append('next')
+                    command_list.append('end')
+                    print(command_list)
+                    send_config = net_connect.send_config_set(command_list)
+                    print(send_config)
+                    command_list = []
     else:
         print("JSON nie uległ zmianie, konfiguracja fortigate nadal aktualna")
 
