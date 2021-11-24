@@ -10,6 +10,28 @@ import requests
 Azure = ['AzureContainerRegistry.WestEurope', 'AzureCloud.westeurope', 'Sql.WestEurope', 'Storage.WestEurope']
 
 
+maskDict = {
+    "15": "255.254.0.0",
+    "16": "255.255.0.0",
+    "17": "255.255.128.0",
+    "18": "255.255.192.0",
+    "19": "255.255.224.0",
+    "20": "255.255.240.0",
+    "21": "255.255.248.0",
+    "22": "255.255.252.0",
+    "23": "255.255.254.0",
+    "24": "255.255.255.0",
+    "25": "255.255.255.128",
+    "26": "255.255.255.192",
+    "27": "255.255.255.224",
+    "28": "255.255.255.240",
+    "29": "255.255.255.248",
+    "30": "255.255.255.252",
+    "31": "255.255.255.254",
+    "32": "255.255.255.255"
+}
+
+
 def deleteOldJson():                        #usuwanie starego JSONa
     listDir = os.listdir('.')
     for item in listDir:
@@ -36,6 +58,8 @@ downloadJson()
 
 def checkMask(x):                                   #Przypisanie maski
     y = x[-2:]
+    return maskDict[y]
+    """
     match y:
         case '15':
             return '255.254.0.0'
@@ -75,6 +99,7 @@ def checkMask(x):                                   #Przypisanie maski
             return '255.255.255.255'
         case _:
             return 0
+"""
 
 
 def ipAddToSubnet(AzureContainer, ipAddress):
@@ -116,8 +141,9 @@ def main():
         command_list = []                                       #Pusta lista komend do puszczenia na fortka
         command_list.append('config firewall address')
         for item in ipAddresses:
-            command_list.extend(ipPushToFortigate(item))
+            command_list.extend(ipPushToFortigate(itemAzure, item))
         command_list.append('end')
+        print(command_list)
         send_config = net_connect.send_config_set(command_list) #Puszczenie listy komend na fortka
         command_list = []                                       #Wyczyszczenie listy komend
         command_list.append('config firewall addrgrp')
