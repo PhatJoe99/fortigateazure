@@ -1,0 +1,4 @@
+bs4==0.0.1
+wget==3.2
+requests==2.26.0
+netmiko==3.4.0
