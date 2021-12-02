@@ -5,6 +5,7 @@ import settings
 from bs4 import BeautifulSoup
 from netmiko import Netmiko
 import requests
+from datetime import date
 
 
 Azure = ['AzureContainerRegistry.WestEurope', 'AzureCloud.westeurope', 'Sql.WestEurope', 'Storage.WestEurope']
@@ -124,6 +125,18 @@ def jsonImport(AzurePart, jsonFileName):
     return ipTable
 
 
+def logToFile(logText):
+    today = date.today()
+    filename = today + '.txt'
+    if os.path.exists(filename):
+        append_or_write = 'a'
+    else:
+        append_or_write = 'w'
+    logFile = open(filename, append_or_write)
+    logFile.write(logText + '\n')
+    logFile.close()
+
+
 def main():
     oldJson = deleteOldJson()                                   #Usunięcie starego JSONa
     print(oldJson)
@@ -131,6 +144,7 @@ def main():
     print(jsonFileName)
     if oldJson != jsonFileName:
         print("Przystępuję od aktualizacji konfiguracji na fortigate")
+        logToFile("-"*20 + "BEGIN" + "-"*20)
         fortek = {                                                  #Dane logowania do fortka
         'host':settings.IP,
         'username':settings.LOGIN,
@@ -149,6 +163,7 @@ def main():
             print(command_list)
             send_config = net_connect.send_config_set(command_list) #Puszczenie listy komend na fortka
             print(send_config)
+            logToFile(send_config)
             command_list = []                                       #Wyczyszczenie listy komend
             for item in ipAddresses:
                 if item[:4] != '2603' and item[:4] != '2a01':
@@ -162,7 +177,9 @@ def main():
                     print(command_list)
                     send_config = net_connect.send_config_set(command_list)
                     print(send_config)
+                    logToFile(send_config)
                     command_list = []
+        logToFile("-"*21 + "END" + "-"*21)
     else:
         print("JSON nie uległ zmianie, konfiguracja fortigate nadal aktualna")
 
