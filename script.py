@@ -128,11 +128,11 @@ def jsonImport(AzurePart, jsonFileName):
 def logToFile(logText):
     today = date.today()
     filename = today + '.txt'
-    if os.path.exists(filename):
+    if os.path.exists("log/" + filename):
         append_or_write = 'a'
     else:
         append_or_write = 'w'
-    logFile = open(filename, append_or_write)
+    logFile = open("log/" + filename, append_or_write)
     logFile.write(logText + '\n')
     logFile.close()
 
