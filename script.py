@@ -6,6 +6,9 @@ from bs4 import BeautifulSoup
 from netmiko import Netmiko
 import requests
 from datetime import date
+import smtplib, ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 
 Azure = ['AzureContainerRegistry.WestEurope', 'AzureCloud.westeurope', 'Sql.WestEurope', 'Storage.WestEurope']
@@ -125,19 +128,38 @@ def jsonImport(AzurePart, jsonFileName):
     return ipTable
 
 
+def sendEmail(receiver, msg):
+    receiver_email = receiver
+    message = MIMEMultipart("alternative")
+    message["Subject"] = "IP Addresses from Azure have been updated"
+    message["From"] = settings.SENDER_EMAIL
+    message["To"] = receiver_email
+    text = msg
+    PlainTextBecauseItsEasier = MIMEText(text, "plain")
+    message.attach(PlainTextBecauseItsEasier)
+    context = ssl.create_default_context()
+    with smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT) as server:
+        server.ehlo()
+        server.starttls(context=context)
+        server.ehlo()
+        server.login(settings.SENDER_EMAIL, settings.EMAIL_PASS)
+        server.sendmail(settings.SENDER_EMAIL, receiver_email, message.as_string())
+
+
 def logToFile(logText):
     today = date.today()
     filename = today + '.txt'
-    if os.path.exists("log/" + filename):
+    if os.path.exists(filename):
         append_or_write = 'a'
     else:
         append_or_write = 'w'
-    logFile = open("log/" + filename, append_or_write)
+    logFile = open(filename, append_or_write)
     logFile.write(logText + '\n')
     logFile.close()
 
 
 def main():
+    ipAddressesToString = ""
     oldJson = deleteOldJson()                                   #Usunięcie starego JSONa
     print(oldJson)
     jsonFileName = downloadJson()                               #Pobranie nowego JSONa
@@ -159,6 +181,7 @@ def main():
             for item in ipAddresses:
                 if item[:4] != '2603' and item[:4] != '2a01':
                     command_list.extend(ipPushToFortigate(itemAzure, item))
+                    ipAddressesToString += "\n" + item
             command_list.append('end')
             print(command_list)
             send_config = net_connect.send_config_set(command_list) #Puszczenie listy komend na fortka
@@ -179,6 +202,9 @@ def main():
                     print(send_config)
                     logToFile(send_config)
                     command_list = []
+        sendEmail("august.wardencki@lifeflow.eu", ipAddressesToString)
+        sendEmail("piotr.bienias@lifeflow.eu", ipAddressesToString)
+        sendEmail("mti@mtisystems.pl", ipAddressesToString)
         logToFile("-"*21 + "END" + "-"*21)
     else:
         print("JSON nie uległ zmianie, konfiguracja fortigate nadal aktualna")
